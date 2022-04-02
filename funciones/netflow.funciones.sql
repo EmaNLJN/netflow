@@ -1,0 +1,71 @@
+use netflow;
+
+-- Obtiene la cantidad total de conexiones actuales que posee el usuario.
+DELIMITER #
+CREATE FUNCTION CURR_CONEXIONES(PARAM_USER INT)
+RETURNS INT
+DETERMINISTIC
+BEGIN
+	DECLARE RESULTADO INT;
+	SELECT 
+    COUNT(*)
+INTO RESULTADO FROM
+    historial_conexiones
+WHERE
+    usuarios_id = PARAM_USER;
+    RETURN RESULTADO;
+END#
+
+-- Obtiene la cantidad de conexiones disponibles que posee el usuario.
+DELIMITER #
+CREATE FUNCTION DISP_CONEXIONES(PARAM_PLAN INT)
+RETURNS INT
+DETERMINISTIC
+BEGIN
+	DECLARE RESULTADO INT;
+    SELECT available_devices INTO RESULTADO FROM planes WHERE id = PARAM_PLAN;
+    RETURN RESULTADO;
+END#
+
+-- Devuelve un mensaje de error si el usuario tiene mas conexiones de las permitidas, ok en caso contrario.
+DELIMITER #
+CREATE FUNCTION CONEXIONES_VALIDAS(PARAM_USUARIO INT, PARAM_PLAN INT)
+RETURNS TEXT
+DETERMINISTIC
+BEGIN
+	DECLARE C_CONEXIONES INT;
+    DECLARE D_CONEXIONES INT;
+    SET C_CONEXIONES = CURR_CONEXIONES(PARAM_USUARIO);
+    SET D_CONEXIONES = DISP_CONEXIONES(PARAM_PLAN);
+    
+    IF C_CONEXIONES > D_CONEXIONES THEN
+		RETURN CONCAT("Usuario con ID:" , PARAM_USUARIO, " tiene mas conexiones de las permitidas.");
+	ELSE
+		RETURN "OK.";
+    END IF;
+END#
+
+-- DEVUELVE el nombre del catalogo
+DELIMITER #
+CREATE FUNCTION NOMBRE_CATALOGO(PARAM_CATALOGO INT)
+RETURNS VARCHAR(225)
+DETERMINISTIC
+BEGIN
+	DECLARE RESULTADO VARCHAR(225);
+    SELECT name INTO RESULTADO FROM catalogos WHERE id = PARAM_CATALOGO;
+	RETURN RESULTADO;
+END#
+
+-- CASOS DE EJEMPLO:
+-- NOTA: EJECUTAR DE MANERA COMO ESTA ESCRITA
+-- CASO DE CONEXIONES DISPONIBLES
+
+-- SELECT name AS 'Usuario', CONEXIONES_VALIDAS(id, planes_id) AS 'Conexiones Estado' FROM usuarios;-- CASO DONDE DA TODO OK
+
+-- UPDATE usuarios SET planes_id = 1 WHERE id = 9;
+
+-- SELECT name AS 'Usuario', CONEXIONES_VALIDAS(id, planes_id) AS 'Conexiones Estado' FROM usuarios;-- CASO DONDE EL USUARIO CON ID 9 TENDRA UN MENSAJE DE ERROR
+
+-- UPDATE usuarios SET planes_id = 4 WHERE id = 9;
+
+-- SELECT name AS 'Pais', NOMBRE_CATALOGO(catalogos_id) AS 'Catalogo' FROM paises;
